@@ -1,0 +1,10 @@
+# Testing
+pytest==8.2.0
+pytest-cov==5.0.0
+pytest-mock==3.14.0
+
+# dbt
+dbt-postgres==1.8.0
+
+# Code quality
+ruff==0.4.4
