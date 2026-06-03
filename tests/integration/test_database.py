@@ -63,3 +63,64 @@ def test_artists_table_has_correct_columns(db_connection):
         actual_columns = {row[0] for row in cur.fetchall()}
 
     assert expected_columns == actual_columns
+
+from ingestion.utils import get_db, execute_many
+
+
+def test_get_db_context_manager_works():
+    """
+    Confirms get_db() can execute a real query against the live database.
+    """
+    with get_db() as (conn, cur):
+        cur.execute("SELECT 1 AS value")
+        result = cur.fetchone()
+
+    assert result["value"] == 1
+
+
+def test_get_db_returns_real_dict_cursor():
+    """
+    Confirms get_db() uses RealDictCursor — rows are dicts, not tuples.
+    Accessing result["value"] should work. result[0] should not.
+    """
+    with get_db() as (conn, cur):
+        cur.execute("SELECT 1 AS value")
+        result = cur.fetchone()
+
+    assert isinstance(result, dict)
+    assert "value" in result
+
+
+def test_execute_many_inserts_and_deduplicates(db_connection):
+    """
+    Inserts two rows into artists using execute_many, then verifies
+    they exist. Cleans up after itself.
+    """
+    # Insert two test artists
+    execute_many(
+        """
+        INSERT INTO artists (name, catalog_tier)
+        VALUES (%s, %s)
+        ON CONFLICT DO NOTHING
+        """,
+        [("__test_artist_a__", 0), ("__test_artist_b__", 0)]
+    )
+
+    # Verify they were inserted
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT name FROM artists WHERE name LIKE %s",
+            ("__test_artist_%",)
+        )
+        results = cur.fetchall()
+
+    names = {row["name"] for row in results}
+    assert "__test_artist_a__" in names
+    assert "__test_artist_b__" in names
+
+    # Cleanup — remove test rows
+    with get_db() as (conn, cur):
+        cur.execute(
+            "DELETE FROM artists WHERE name LIKE %s",
+            ("__test_artist_%",)
+        )
