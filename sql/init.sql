@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS artist_similarity (
 -- Personal seed list
 CREATE TABLE IF NOT EXISTS seed_artists (
     id          SERIAL PRIMARY KEY,
-    artist_id   INTEGER NOT NULL REFERENCES artists(artist_id) UNIQUE,
+    artist_id   INTEGER NOT NULL REFERENCES artists(artist_id) ON DELETE CASCADE UNIQUE,
     added_at    TIMESTAMP DEFAULT NOW(),
     notes       TEXT
 );
