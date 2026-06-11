@@ -177,6 +177,30 @@ def fetch_artist_tags(mb_id: str) -> list[dict]:
     return tags
 
 
+@mb_retry
+@rate_limit(1.1)
+def get_artist_name_by_mbid(mb_id: str) -> str | None:
+    """
+    Looks up an artist's canonical name using their MusicBrainz ID.
+    Used during catalog expansion when ListenBrainz does not provide names.
+
+    Returns the name string, or None if not found.
+    """
+    logger.debug(f"Looking up MusicBrainz name for mb_id: {mb_id}")
+
+    try:
+        result      = musicbrainzngs.get_artist_by_id(mb_id)
+        artist_data = result.get("artist", {})
+        name        = artist_data.get("name", "").strip()
+        return name if name else None
+    except musicbrainzngs.WebServiceError as e:
+        logger.warning(f"MusicBrainz WebServiceError for mb_id '{mb_id}': {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"Unexpected error looking up name for '{mb_id}': {e}")
+        return None
+
+
 # ─────────────────────────────────────────────────────
 # Database Writers
 # ─────────────────────────────────────────────────────

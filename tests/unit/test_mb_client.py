@@ -7,6 +7,7 @@ from ingestion.mb_client import (
     save_artist_tags,
     has_sufficient_tags,
     _pick_best_match,
+    get_artist_name_by_mbid,
 )
 
 
@@ -330,3 +331,45 @@ def test_save_artist_tags_calls_execute_many_with_correct_values():
     values_passed = mock_exec.call_args[0][1]
     assert (99, "art rock", 15)         in values_passed
     assert (99, "alternative rock", 12) in values_passed
+
+
+# ─────────────────────────────────────────────────────
+# get_artist_name_by_mbid
+# ─────────────────────────────────────────────────────
+
+def test_get_artist_name_by_mbid_returns_name():
+    fake_response = {
+        "artist": {"name": "Radiohead"}
+    }
+    with patch("ingestion.mb_client.musicbrainzngs.get_artist_by_id",
+               return_value=fake_response):
+        result = get_artist_name_by_mbid("abc-123")
+
+    assert result == "Radiohead"
+
+
+def test_get_artist_name_by_mbid_returns_none_when_empty():
+    fake_response = {"artist": {"name": ""}}
+    with patch("ingestion.mb_client.musicbrainzngs.get_artist_by_id",
+               return_value=fake_response):
+        result = get_artist_name_by_mbid("abc-123")
+
+    assert result is None
+
+
+def test_get_artist_name_by_mbid_returns_none_on_error():
+    import musicbrainzngs
+    with patch("ingestion.mb_client.musicbrainzngs.get_artist_by_id",
+               side_effect=musicbrainzngs.WebServiceError("not found")):
+        result = get_artist_name_by_mbid("bad-id")
+
+    assert result is None
+
+
+def test_get_artist_name_by_mbid_strips_whitespace():
+    fake_response = {"artist": {"name": "  Radiohead  "}}
+    with patch("ingestion.mb_client.musicbrainzngs.get_artist_by_id",
+               return_value=fake_response):
+        result = get_artist_name_by_mbid("abc-123")
+
+    assert result == "Radiohead"
