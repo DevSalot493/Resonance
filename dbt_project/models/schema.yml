@@ -1,0 +1,59 @@
+version: 2
+
+models:
+  - name: stg_artists
+    description: "Active artists from the catalog"
+    columns:
+      - name: artist_id
+        description: "Primary key"
+        data_tests:
+          - unique
+          - not_null
+      - name: catalog_status
+        data_tests:
+          - accepted_values:
+              name: accepted_values_catalog_status
+              values: ['active']
+
+  - name: stg_lastfm_tags
+    description: "Cleaned Last.fm tags"
+    columns:
+      - name: artist_id
+        data_tests:
+          - not_null
+      - name: tag_name
+        data_tests:
+          - not_null
+      - name: tag_weight_raw
+        data_tests:
+          - not_null
+
+  - name: stg_mb_tags
+    description: "Cleaned MusicBrainz tags"
+    columns:
+      - name: artist_id
+        data_tests:
+          - not_null
+      - name: tag_name
+        data_tests:
+          - not_null
+
+  - name: mart_artist_tag_profiles
+    description: "Unified normalised tag profiles — PySpark input"
+    columns:
+      - name: artist_id
+        data_tests:
+          - not_null
+      - name: tag_name
+        data_tests:
+          - not_null
+      - name: unified_weight
+        data_tests:
+          - not_null
+      - name: source_count
+        data_tests:
+          - not_null
+          - accepted_values:
+              name: accepted_values_source_count
+              values: [1, 2]
+
