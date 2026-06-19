@@ -139,6 +139,20 @@ def insert_seed_artist(artist_id: int) -> None:
         )
 
 
+def get_artist_id_by_mbid(mb_id: str) -> int | None:
+    """
+    Checks if an artist already exists by MusicBrainz ID.
+    Returns artist_id if found, None otherwise.
+    Used in process_artist to detect MBID collisions before updating.
+    """
+    with get_db() as (conn, cur):
+        cur.execute(
+            "SELECT artist_id FROM artists WHERE mb_id = %s::uuid",
+            (mb_id,),
+        )
+        row = cur.fetchone()
+    return row["artist_id"] if row else None
+
 # ─────────────────────────────────────────────────────
 # Per-Artist Processing
 # ─────────────────────────────────────────────────────
@@ -197,8 +211,27 @@ def process_artist(
     # ── Step 4: Resolve MusicBrainz ID ────────────────
     mb_result = mb_search(name)
     if mb_result and mb_result.get("mb_id"):
-        update_artist_mb_id(artist_id, mb_result["mb_id"])
         mb_id = mb_result["mb_id"]
+
+        existing_by_mbid = get_artist_id_by_mbid(mb_id)
+        if existing_by_mbid and existing_by_mbid != artist_id:
+            logger.info(
+                f"'{name}' already in catalog under different name "
+                f"(artist_id={existing_by_mbid}), using existing record"
+            )
+            with get_db() as (conn, cur):
+                cur.execute(
+                    "DELETE FROM artists WHERE artist_id = %s",
+                    (artist_id,),
+                )
+            artist_id           = existing_by_mbid
+            result["artist_id"] = artist_id
+            result["status"]    = "already_exists"
+            result["skipped"]   = True
+            insert_seed_artist(artist_id)
+            return result
+
+        update_artist_mb_id(artist_id, mb_id)
         logger.debug(f"Resolved MusicBrainz ID for '{name}': {mb_id}")
     else:
         logger.warning(f"Could not resolve '{name}' on MusicBrainz")

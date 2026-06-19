@@ -170,20 +170,21 @@ def test_process_artist_skips_existing_artist():
 def test_process_artist_returns_ok_status_for_new_artist():
     mock_network = MagicMock()
 
-    with patch("ingestion.seed_loader.artist_exists",       return_value=None), \
-         patch("ingestion.seed_loader.insert_artist",       return_value=1), \
-         patch("ingestion.seed_loader.lastfm_resolve",      return_value="Tame Impala"), \
+    with patch("ingestion.seed_loader.artist_exists",          return_value=None), \
+         patch("ingestion.seed_loader.insert_artist",          return_value=1), \
+         patch("ingestion.seed_loader.lastfm_resolve",         return_value="Tame Impala"), \
          patch("ingestion.seed_loader.update_artist_lastfm_name"), \
-         patch("ingestion.seed_loader.mb_search",           return_value={"mb_id": "abc-123"}), \
+         patch("ingestion.seed_loader.mb_search",              return_value={"mb_id": "abc-123"}), \
+         patch("ingestion.seed_loader.get_artist_id_by_mbid",  return_value=None), \
          patch("ingestion.seed_loader.update_artist_mb_id"), \
-         patch("ingestion.seed_loader.lastfm_fetch_tags",   return_value=[{"tag_name": "indie", "tag_weight": 90}] * 6), \
-         patch("ingestion.seed_loader.lastfm_save_tags",    return_value=6), \
-         patch("ingestion.seed_loader.mb_fetch_tags",       return_value=[{"tag_name": "rock", "vote_count": 5}] * 4), \
-         patch("ingestion.seed_loader.mb_save_tags",        return_value=4), \
-         patch("ingestion.seed_loader.lb_fetch_similar",    return_value=[]), \
-         patch("ingestion.seed_loader.lb_save_similar",     return_value=0), \
-         patch("ingestion.seed_loader.lastfm_sufficient",   return_value=True), \
-         patch("ingestion.seed_loader.mb_sufficient",       return_value=True), \
+         patch("ingestion.seed_loader.lastfm_fetch_tags",      return_value=[{"tag_name": "indie", "tag_weight": 90}] * 6), \
+         patch("ingestion.seed_loader.lastfm_save_tags",       return_value=6), \
+         patch("ingestion.seed_loader.mb_fetch_tags",          return_value=[{"tag_name": "rock", "vote_count": 5}] * 4), \
+         patch("ingestion.seed_loader.mb_save_tags",           return_value=4), \
+         patch("ingestion.seed_loader.lb_fetch_similar",       return_value=[]), \
+         patch("ingestion.seed_loader.lb_save_similar",        return_value=0), \
+         patch("ingestion.seed_loader.lastfm_sufficient",      return_value=True), \
+         patch("ingestion.seed_loader.mb_sufficient",          return_value=True), \
          patch("ingestion.seed_loader.insert_seed_artist"):
 
         result = process_artist("Tame Impala", mock_network)
