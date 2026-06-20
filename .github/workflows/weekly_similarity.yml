@@ -1,0 +1,66 @@
+name: Weekly Similarity Recompute
+
+on:
+  schedule:
+    - cron: '0 4 * * 0'   # 4 AM UTC every Sunday
+  workflow_dispatch:
+
+jobs:
+  recompute:
+    runs-on: ubuntu-latest
+
+    # Same requirement as daily_catalog_expansion.yml — needs secrets
+    # pointing at a real, deployed PostgreSQL instance.
+    env:
+      POSTGRES_HOST:     ${{ secrets.POSTGRES_HOST }}
+      POSTGRES_PORT:     ${{ secrets.POSTGRES_PORT }}
+      POSTGRES_USER:     ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB:       ${{ secrets.POSTGRES_DB }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Set up Java 11 (required for PySpark)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run dbt transformation
+        working-directory: dbt_project
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml << EOF
+          resonance:
+            target: prod
+            outputs:
+              prod:
+                type: postgres
+                host: ${{ secrets.POSTGRES_HOST }}
+                port: ${{ secrets.POSTGRES_PORT }}
+                user: ${{ secrets.POSTGRES_USER }}
+                password: ${{ secrets.POSTGRES_PASSWORD }}
+                dbname: ${{ secrets.POSTGRES_DB }}
+                schema: public
+                threads: 4
+          EOF
+          dbt run --target prod
+          dbt test --target prod
+
+      - name: Run PySpark similarity job
+        env:
+          DATABASE_URL: postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@${{ secrets.POSTGRES_HOST }}:${{ secrets.POSTGRES_PORT }}/${{ secrets.POSTGRES_DB }}
+        run: |
+          python spark_jobs/run_similarity.py
