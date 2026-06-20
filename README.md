@@ -88,7 +88,7 @@ resonance/
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/resonance.git
+git clone [https://github.com/YOUR_USERNAME/resonance.git](https://github.com/DevSalot493/Resonance)
 cd resonance
 python -m venv .venv
 source .venv/Scripts/activate   # Windows Git Bash
