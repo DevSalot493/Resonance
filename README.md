@@ -190,8 +190,7 @@ pytest tests/integration/ -v
 
 ## CI/CD
 
-- `test.yml` — runs the unit test suite on every push (GitHub Actions)
-- `daily_catalog_expansion.yml` / `weekly_similarity.yml` — scheduled production automation, require a deployed database and secrets to run live (see workflow files for configuration)
+The unit test suite runs automatically on every push via GitHub Actions (`test.yml`). Integration tests require Docker running with a fully populated local database and are run manually.
 
 ## License
 
